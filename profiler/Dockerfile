@@ -1,25 +1,52 @@
-# Используем официальный образ Python с нужной версией
-FROM python:3.10-slim
+# === Этап 1: Сборка зависимостей ===
+FROM python:3.10-alpine AS builder
 
-# Задаем рабочую директорию в контейнере
+# Установка зависимостей для компиляции Pillow
+RUN apk add --no-cache \
+    gcc \
+    musl-dev \
+    jpeg-dev \
+    zlib-dev \
+    freetype-dev \
+    lcms2-dev \
+    openjpeg-dev \
+    tiff-dev \
+    tk-dev \
+    tcl-dev
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --user --no-cache-dir -r requirements.txt
+
+
+# === Этап 2: Финальный образ ===
+FROM python:3.10-alpine
+
+# Установка runtime-зависимостей для Pillow
+RUN apk add --no-cache \
+    jpeg-dev \
+    zlib-dev \
+    freetype-dev \
+    lcms2-dev \
+    openjpeg-dev \
+    tiff-dev
+
+# Создание пользователя без root-прав
+RUN adduser -D appuser
+USER appuser
+
 WORKDIR /app
 
-# Копируем файлы с зависимостями (requirements.txt)
-COPY requirements.txt .
+# Копируем только необходимое
+COPY --chown=appuser:appuser --from=builder /root/.local /home/appuser/.local
+COPY --chown=appuser:appuser . .
 
-# Устанавливаем зависимости
-RUN pip install --no-cache-dir -r requirements.txt
+# Добавляем /home/appuser/.local/bin в PATH
+ENV PATH=/home/appuser/.local/bin:$PATH
 
-# Копируем все файлы проекта в контейнер
-COPY . .
-
-# Открываем порт, на котором будет работать Flask (обычно 5000)
 EXPOSE 5000
 
-# Устанавливаем переменную окружения для Flask
 ENV FLASK_APP=app.py
 ENV FLASK_RUN_HOST=0.0.0.0
 
-# Команда для запуска Flask-приложения
 CMD ["flask", "run"]
-
