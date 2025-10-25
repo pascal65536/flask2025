@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <form method="POST" action="{{ url_for('gena') }}">
+        <div style="display: flex; gap: 2rem; align-items: center; justify-content: center; flex-wrap: wrap;">
+            <div style="text-align: center;">
+                <label for="color" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">
+                    Выберите цвет:
+                </label>
+                <input type="color" id="color" name="color" value="{{ color_hex }}" 
+                       style="width: 100px; height: 100px;">
+                <br>
+                <small style="color: #666; margin-top: 0.5rem; display: block;">
+                    Текущий: {{ color_hex }}
+                </small>
+            </div>
+            
+            <div style="text-align: center;">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="check_existing" {% if request.form.get('check_existing') %}checked{% endif %}>
+                    Проверять существующие изображения
+                </label>
+                <br>
+                <button type="submit" class="btn" style="margin-top: 1rem;">Сгенерировать изображение</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Три последние картинки -->
+{% if recent_images %}
+<div class="card">
+    <h3>Последние созданные изображения</h3>
+    <div class="image-grid">
+        {% for image in recent_images %}
+        <div class="image-card">
+            <img src="{{ url_for('static', filename='generated_images/' + image.filename) }}" 
+                 alt="Generated image {{ image.color_hex }}"
+                 style="width: 100%; height: 200px; object-fit: cover;">
+            <div class="image-info">
+                <strong>{{ image.color_hex }}</strong>
+                <br>
+                <small>{{ image.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

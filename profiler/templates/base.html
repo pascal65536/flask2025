@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Для дополнительной поддержки разных форматов -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+        
+    <title>Experiments: {% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <header class="header">
+        <nav class="nav container">
+            <div class="logo">Experiments</div>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('index') }}">Главная</a></li>
+                <li><a href="{{ url_for('pictures') }}">Галерея</a></li>
+                <li><a href="{{ url_for('gena') }}">Генератор</a></li>
+                <li><a href="{{ url_for('weather1') }}">Погода 1</a></li>
+                <li><a href="{{ url_for('weather2') }}">Погода 2</a></li>
+                <li><a href="{{ url_for('weather3') }}">Погода 3</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+
+            <!-- Flash сообщения -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="flash-message flash-{{ category }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            <div class="page-header">
+                <h1>{{ name }}</h1>
+                <p>{{ descriptions }}</p>
+            </div>            
+
+            {% block content %}{% endblock %}
+
+            <div class="experiment-time">
+            <p><strong>Время выполнения бэкенда:</strong> {{ "%.2f"|format(execution_time * 1000) }} мс</p>
+
+            {% if sql_queries %}
+                <h4 class="sql-queries-title">SQL-запросы (всего: {{ sql_queries|length }})</h4>
+                <div class="sql-queries-list">
+                {% for q in sql_queries %}
+                    <div class="sql-query-item">
+                    <div class="sql-statement">
+                        <strong>SQL:</strong>
+                        <pre>{{ q.statement }}</pre>
+                    </div>
+                    <div class="sql-params">
+                        <strong>Параметры:</strong>
+                        <code>{{ q.parameters|tojson(indent=2) }}</code>
+                    </div>
+                    {% if q.duration is defined %}
+                        <div class="sql-duration">
+                        <strong>Время:</strong> {{ "%.2f"|format(q.duration * 1000) }} мс
+                        </div>
+                    {% endif %}
+                    </div>
+                {% endfor %}
+                </div>
+            {% else %}
+                <p class="no-queries">Нет выполненных SQL-запросов.</p>
+            {% endif %}
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Experiments</p>
+        </div>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

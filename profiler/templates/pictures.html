@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+{% if images %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2>Всего изображений: {{ pagination.total }}</h2>
+        <form method="POST" action="{{ url_for('clear_images') }}" style="display: inline;">
+            <button type="submit" class="btn btn-danger" 
+                    onclick="return confirm('Вы уверены, что хотите удалить все изображения?')">
+                Очистить галерею
+            </button>
+        </form>
+    </div>
+
+    <div class="image-grid">
+        {% for image in images %}
+        <div class="image-card">
+            <img src="{{ url_for('static', filename='generated_images/' + image.filename) }}" 
+                 alt="Generated image {{ image.color_hex }}"
+                 style="width: 100%; height: 200px; object-fit: cover;">
+            <div class="image-info">
+                <strong>{{ image.color_hex }}</strong>
+                <br>
+                <small>Создано: {{ image.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Пагинация -->
+    <div class="pagination" style="display: flex; justify-content: center; margin-top: 2rem; gap: 0.5rem;">
+        {% if pagination.has_prev %}
+            <a href="{{ url_for('pictures', page=pagination.prev_num) }}" class="btn">← Назад</a>
+        {% endif %}
+        
+        <span style="padding: 0.75rem 1rem; background: #f8f9fa; border-radius: 5px;">
+            Страница {{ pagination.page }} из {{ pagination.pages }}
+        </span>
+        
+        {% if pagination.has_next %}
+            <a href="{{ url_for('pictures', page=pagination.next_num) }}" class="btn">Вперед →</a>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div style="text-align: center; padding: 2rem;">
+        <h3>Галерея пуста</h3>
+        <p>Пока нет созданных изображений.</p>
+        <a href="{{ url_for('gena') }}" class="btn">Создать первое изображение</a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

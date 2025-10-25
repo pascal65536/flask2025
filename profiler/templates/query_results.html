@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tables.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Результаты анализа</h2>
+    <div class="table-container">
+        <table class="weather-table">
+            <thead>
+                <tr>
+                    <th>Город</th>
+                    <th>Средняя температура</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data %}
+                <tr>
+                    <td>{{ item.city }}</td>
+                    <td>
+                        <span class="{% if item.avg_temp > 0 %}temp-positive{% elif item.avg_temp < 0 %}temp-negative{% else %}temp-zero{% endif %}">
+                            {{ item.avg_temp }}°C
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
