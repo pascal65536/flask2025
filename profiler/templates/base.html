@@ -17,18 +17,41 @@
 
 <body>
     <header class="header">
-        <nav class="nav container">
-            <div class="logo">Experiments</div>
-            <ul class="nav-links">
-                <li><a href="{{ url_for('index') }}">Главная</a></li>
-                <li><a href="{{ url_for('pictures') }}">Галерея</a></li>
-                <li><a href="{{ url_for('gena') }}">Генератор</a></li>
-                <li><a href="{{ url_for('weather1') }}">Погода 1</a></li>
-                <li><a href="{{ url_for('weather2') }}">Погода 2</a></li>
-                <li><a href="{{ url_for('weather3') }}">Погода 3</a></li>
-                <li><a href="{{ url_for('settings') }}">settings</a></li>
-            </ul>
-        </nav>
+<ul class="nav-links">
+    <li><a href="{{ url_for('index') }}">Главная</a></li>
+    <li><a href="{{ url_for('pictures') }}">Галерея</a></li>
+    <li><a href="{{ url_for('gena') }}">Генератор</a></li>
+    <li><a href="{{ url_for('weather1') }}">Погода 1</a></li>
+    <li><a href="{{ url_for('weather2') }}">Погода 2</a></li>
+    <li><a href="{{ url_for('weather3') }}">Погода 3</a></li>
+
+    <!-- Настройки в навбаре с использованием формы -->
+    <li>
+        <form method="post" action="{{ url_for('settings') }}" style="display: flex; align-items: center; gap: 0.5rem;">
+            <!-- Пиктограмма переключения per_page -->
+            <select name="per_page" onchange="this.form.submit()" title="Количество объектов на странице" style="font-size: 0.9rem;">
+                {% for val, label in [('8','8'),('16','16'),('24','24'),('32','32'),('0','Все')] %}
+                    <option value="{{ val }}" {% if settings.per_page|string == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+
+            <!-- Пиктограмма выбора pic (иконки можно вставить через <img> или emoji) -->
+            <select name="pic" onchange="this.form.submit()" title="Выбор картинки" style="font-size: 0.9rem;">
+                {% for val, label in [('250.jpg', '🖼️ 250'), ('500.webp', '🖼️ 500'), ('1080.png', '🖼️ 1080')] %}
+                    <option value="{{ val }}" {% if settings.pic == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+
+            <!-- Чекбоксы для html и css для большей компактности -->
+            <label title="Минифицировать HTML" style="margin-left: 0.5rem;"><input type="checkbox" name="html" value="1" {% if settings.html %}checked{% endif %} onchange="this.form.submit()"> HTML</label>
+            <label title="Минифицировать CSS"><input type="checkbox" name="css" value="1" {% if settings.css %}checked{% endif %} onchange="this.form.submit()"> CSS</label>
+        </form>
+    </li>
+    <li>
+        <strong>Время выполнения бэкенда:</strong> {{ "%.2f"|format(execution_time * 1000) }} мс
+    </li>
+</ul>
+
     </header>
 
     <main class="main-content">
@@ -52,8 +75,6 @@
             {% block content %}{% endblock %}
 
             <div class="experiment-time">
-            <p><strong>Время выполнения бэкенда:</strong> {{ "%.2f"|format(execution_time * 1000) }} мс</p>
-
             {% if sql_queries %}
                 <h4 class="sql-queries-title">SQL-запросы (всего: {{ sql_queries|length }})</h4>
                 <div class="sql-queries-list">

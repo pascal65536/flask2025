@@ -11,7 +11,6 @@ import time
 import htmlmin
 from forms import SettingsForm
 
-
 SETTINGS = {
     "per_page": "8",
     "pic": "250.jpg",
@@ -100,45 +99,18 @@ def populate_sample_data():
     db.session.commit()
 
 
-@app.route("/settings", methods=["GET", "POST"])
+@app.route('/settings', methods=['POST'])
 def settings():
-    start_time = time.time()
-    form = SettingsForm()
+    # Сохраняем настройки из формы
+    SETTINGS['per_page'] = int(request.form.get('per_page', SETTINGS.get('per_page', 8)))
+    SETTINGS['pic'] = request.form.get('pic', SETTINGS.get('pic', '250.jpg'))
+    # Обрабатываем чекбоксы - если не пришли, то False
+    SETTINGS['html'] = 'html' in request.form
+    SETTINGS['css'] = 'css' in request.form
 
-    # Заполняем данные формы при GET
-    if request.method == "GET":
-        form.pic.entries = []
-        form.pic.append_entry(SETTINGS["pic"])
-        form.html.data = SETTINGS["html"]
-        form.css.data = SETTINGS["css"]
-        form.per_page.data = str(SETTINGS.get("per_page", "8"))  # per_page - SelectField, строка
-
-    # Обработка POST и валидация
-    if form.validate_on_submit():
-        SETTINGS["pic"] = form.pic.entries[0].data if form.pic.entries else ""
-        SETTINGS["html"] = form.html.data
-        SETTINGS["css"] = form.css.data
-        SETTINGS["per_page"] = int(form.per_page.data)  # получаем из SelectField как строку, конвертируем в int
-        msg = "Настройки успешно сохранены"
-        flash(msg, "success")
-        return redirect(url_for("settings"))
-
-    html_content = render_template(
-        "settings.html",
-        form=form,
-        title="Platform",
-        name="Добро пожаловать в Experiments Platform",
-        experiment="experiment",
-        descriptions="Исследуйте возможности веб-разработки, оптимизацию запросов и генерацию изображений",
-        execution_time=time.time() - start_time,
-        sql_queries=g.get("sql_queries", list()),
-    )
-
-    # Минификация HTML
-    if SETTINGS["html"]:
-        return htmlmin.minify(html_content)
-    else:
-        return html_content
+    flash('Настройки обновлены', 'success')
+    # Возвращаем на предыдущую страницу (реферер) или главную
+    return redirect(request.referrer or url_for('index'))
 
 
 @app.route("/")
@@ -164,6 +136,7 @@ def index():
         execution_time=time.time() - start_time,
         sql_queries=g.get("sql_queries", list()),
         recent_images=recent_images,
+        settings=SETTINGS,
     )
 
     # Минификация HTML
@@ -194,6 +167,8 @@ def pictures(page=1):
             recent.filename = recent.filename.split(".")[0] + "_500.webp"
         elif SETTINGS["pic"] == '250.jpg': 
             recent.filename = recent.filename.split(".")[0] + "_250.jpg"
+    
+    total = images_pagination.total if images_pagination else len(images)
 
     # Рендеринг шаблона
     html_content = render_template(
@@ -205,7 +180,10 @@ def pictures(page=1):
         execution_time=time.time() - start_time,
         sql_queries=g.get("sql_queries", list()),
         pagination=images_pagination,
+        total=total,
         images=images,
+        settings=SETTINGS,
+
     )
 
     # Минификация HTML
@@ -249,6 +227,8 @@ def gena():
         sql_queries=g.get("sql_queries", list()),
         recent_images=recent_images,
         color_hex=color_hex,
+        settings=SETTINGS,
+
     )
 
     # Минификация HTML
@@ -289,6 +269,8 @@ def weather1():
         execution_time=time.time() - start_time,
         sql_queries=g.get("sql_queries", list()),
         data=results,
+        settings=SETTINGS,
+
     )
 
 
@@ -315,6 +297,8 @@ def weather2():
         execution_time=time.time() - start_time,
         sql_queries=g.get("sql_queries", list()),
         data=results,
+        settings=SETTINGS,
+
     )
 
 
@@ -340,6 +324,8 @@ def weather3():
         execution_time=time.time() - start_time,
         sql_queries=g.get("sql_queries", list()),
         data=results,
+        settings=SETTINGS,
+
     )
 
 

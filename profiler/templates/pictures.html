@@ -6,7 +6,7 @@
 {% if images %}
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h2>Всего изображений: {{ images|length }}</h2>
+        <h2>Всего изображений: {{ total }}</h2>
         <form method="POST" action="{{ url_for('clear_images') }}" style="display: inline;">
             <button type="submit" class="btn btn-danger" 
                     onclick="return confirm('Вы уверены, что хотите удалить все изображения?')">
