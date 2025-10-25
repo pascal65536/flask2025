@@ -31,7 +31,6 @@ app.config["FONT_FOLDER"] = "static/fonts"
 
 db = SQLAlchemy(app)
 
-# Создаем папки если их нет
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 os.makedirs(app.config["FONT_FOLDER"], exist_ok=True)
 
@@ -100,6 +99,20 @@ def populate_sample_data():
     db.session.commit()
 
 
+def for_user(html, *args, **kwargs):
+    for recent in kwargs.get("recent_images", []):
+        if SETTINGS["pic"] == "500.webp":
+            recent.filename = recent.filename.split(".")[0] + "_500.webp"
+        elif SETTINGS["pic"] == "250.jpg":
+            recent.filename = recent.filename.split(".")[0] + "_250.jpg"
+    html_content = render_template(html, *args, **kwargs)
+
+    if SETTINGS["html"]:
+        html_content = htmlmin.minify(html_content)
+
+    return html_content
+
+
 @app.route("/settings", methods=["POST"])
 def settings():
     SETTINGS["per_page"] = int(
@@ -119,14 +132,8 @@ def index():
         GeneratedImage.query.order_by(GeneratedImage.created_at.desc()).limit(8).all()
     )
 
-    for recent in recent_images:
-        if SETTINGS["pic"] == "500.webp":
-            recent.filename = recent.filename.split(".")[0] + "_500.webp"
-        elif SETTINGS["pic"] == "250.jpg":
-            recent.filename = recent.filename.split(".")[0] + "_250.jpg"
-
     # Рендеринг шаблона
-    html_content = render_template(
+    return for_user(
         "index.html",
         title="Platform",
         name="Добро пожаловать в Experiments Platform",
@@ -137,12 +144,6 @@ def index():
         recent_images=recent_images,
         settings=SETTINGS,
     )
-
-    # Минификация HTML
-    if SETTINGS["html"]:
-        return htmlmin.minify(html_content)
-    else:
-        return html_content
 
 
 @app.route("/pictures")
@@ -159,16 +160,10 @@ def pictures(page=1):
         images = GeneratedImage.query.order_by(GeneratedImage.created_at.desc()).all()
         images_pagination = []
 
-    for recent in images:
-        if SETTINGS["pic"] == "500.webp":
-            recent.filename = recent.filename.split(".")[0] + "_500.webp"
-        elif SETTINGS["pic"] == "250.jpg":
-            recent.filename = recent.filename.split(".")[0] + "_250.jpg"
-
     total = images_pagination.total if images_pagination else len(images)
 
     # Рендеринг шаблона
-    html_content = render_template(
+    return for_user(
         "pictures.html",
         title="Галерея изображений",
         name="Галерея созданных изображений",
@@ -181,12 +176,6 @@ def pictures(page=1):
         images=images,
         settings=SETTINGS,
     )
-
-    # Минификация HTML
-    if SETTINGS["html"]:
-        return htmlmin.minify(html_content)
-    else:
-        return html_content
 
 
 @app.route("/gena", methods=["GET", "POST"])
@@ -206,14 +195,8 @@ def gena():
         GeneratedImage.query.order_by(GeneratedImage.created_at.desc()).limit(4).all()
     )
 
-    for recent in recent_images:
-        if SETTINGS["pic"] == "500.webp":
-            recent.filename = recent.filename.split(".")[0] + "_500.webp"
-        elif SETTINGS["pic"] == "250.jpg":
-            recent.filename = recent.filename.split(".")[0] + "_250.jpg"
-
     # Рендеринг шаблона
-    html_content = render_template(
+    return for_user(
         "gena.html",
         title="Генератор картинок",
         name="Генератор художественных изображений",
@@ -226,11 +209,6 @@ def gena():
         settings=SETTINGS,
     )
 
-    # Минификация HTML
-    if SETTINGS["html"]:
-        return htmlmin.minify(html_content)
-    else:
-        return html_content
 
 
 @app.route("/api/clear_images", methods=["POST"])
@@ -255,7 +233,9 @@ def weather1():
     )
     results = [{"city": city, "avg_temp": round(avg_temp, 2)} for city, avg_temp in qs]
     results.sort(key=lambda x: x["city"])
-    return render_template(
+
+    # Рендеринг шаблона
+    return for_user(
         "query_results.html",
         title="Оптимизированная версия",
         name="Средняя температура по городам",
@@ -282,7 +262,9 @@ def weather2():
         )
         results.append({"city": city_name, "avg_temp": round(avg_temp or 0, 2)})
     results.sort(key=lambda x: x["city"])
-    return render_template(
+
+    # Рендеринг шаблона
+    return for_user(
         "query_results.html",
         title="Полуоптимизированная версия",
         name="Средняя температура по городам",
@@ -308,7 +290,9 @@ def weather3():
         avg_temp = total_temp / len(qs) if qs else 0
         results.append({"city": city_name, "avg_temp": round(avg_temp, 2)})
     results.sort(key=lambda x: x["city"])
-    return render_template(
+
+    # Рендеринг шаблона
+    return for_user(
         "query_results.html",
         title="Неэффективный SQL запрос",
         name="Средняя температура по городам",
