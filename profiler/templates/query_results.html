@@ -3,7 +3,11 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/tables.css') }}">
+    {% if settings.css %}
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/tables.min.css') }}">
+    {% else %}
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/tables.css') }}">
+    {% endif %}
 {% endblock %}
 
 {% block content %}

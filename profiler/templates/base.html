@@ -1,116 +1,140 @@
 <!DOCTYPE html>
 <html lang="ru">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
-        
     <title>Experiments: {% block title %}{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% if settings.css %}
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/style.min.css') }}">
+    {% else %}
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% endif %}
     {% block extra_css %}{% endblock %}
 </head>
-
 <body>
     <header class="header">
-<ul class="nav-links">
-    <li><a href="{{ url_for('index') }}">Главная</a></li>
-    <li><a href="{{ url_for('pictures') }}">Галерея</a></li>
-    <li><a href="{{ url_for('gena') }}">Генератор</a></li>
-    <li><a href="{{ url_for('weather1') }}">Погода 1</a></li>
-    <li><a href="{{ url_for('weather2') }}">Погода 2</a></li>
-    <li><a href="{{ url_for('weather3') }}">Погода 3</a></li>
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0;">
+            <ul class="nav-links" style="margin: 0; padding: 0; list-style: none; display: flex; gap: 1.25rem;">
+                <li><a href="{{ url_for('index') }}">Главная</a></li>
+                <li><a href="{{ url_for('pictures') }}">Галерея</a></li>
+                <li><a href="{{ url_for('gena') }}">Генератор</a></li>
+                <li><a href="{{ url_for('weather1') }}">Погода 1</a></li>
+                <li><a href="{{ url_for('weather2') }}">Погода 2</a></li>
+                <li><a href="{{ url_for('weather3') }}">Погода 3</a></li>
+            </ul>
 
-    <!-- Настройки в навбаре с использованием формы -->
-    <li>
-        <form method="post" action="{{ url_for('settings') }}" style="display: flex; align-items: center; gap: 0.5rem;">
-            <!-- Пиктограмма переключения per_page -->
-            <select name="per_page" onchange="this.form.submit()" title="Количество объектов на странице" style="font-size: 0.9rem;">
-                {% for val, label in [('8','8'),('16','16'),('24','24'),('32','32'),('0','Все')] %}
-                    <option value="{{ val }}" {% if settings.per_page|string == val %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div class="nav-performance">
+                    ⚡ {{ "%.2f"|format(execution_time * 1000) }} мс
+                </div>
 
-            <!-- Пиктограмма выбора pic (иконки можно вставить через <img> или emoji) -->
-            <select name="pic" onchange="this.form.submit()" title="Выбор картинки" style="font-size: 0.9rem;">
-                {% for val, label in [('250.jpg', '🖼️ 250'), ('500.webp', '🖼️ 500'), ('1080.png', '🖼️ 1080')] %}
-                    <option value="{{ val }}" {% if settings.pic == val %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-
-            <!-- Чекбоксы для html и css для большей компактности -->
-            <label title="Минифицировать HTML" style="margin-left: 0.5rem;"><input type="checkbox" name="html" value="1" {% if settings.html %}checked{% endif %} onchange="this.form.submit()"> HTML</label>
-            <label title="Минифицировать CSS"><input type="checkbox" name="css" value="1" {% if settings.css %}checked{% endif %} onchange="this.form.submit()"> CSS</label>
-        </form>
-    </li>
-    <li>
-        <strong>Время выполнения бэкенда:</strong> {{ "%.2f"|format(execution_time * 1000) }} мс
-    </li>
-</ul>
-
+                <!-- Настройки в выпадающем меню -->
+                <div class="nav-settings">
+                    <div style="cursor: pointer; padding: 0.5rem; border-radius: 50%; background: rgba(255,255,255,0.2); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">
+                        ⚙️
+                    </div>
+                    <form method="post" action="{{ url_for('settings') }}" class="settings-dropdown">
+                        <div class="settings-group">
+                            <label>Объектов на странице</label>
+                            <select name="per_page" onchange="this.form.submit()">
+                                {% for val, label in [('8','8'),('16','16'),('24','24'),('32','32'),('0','Все')] %}
+                                    <option value="{{ val }}" {% if settings.per_page|string == val %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="settings-group">
+                            <label>Размер изображений</label>
+                            <div class="settings-row">
+                                {% for val, label in [('250.jpg', '250'), ('500.webp', '500'), ('1080.png', '1080')] %}
+                                    <label>
+                                        <input type="radio" name="pic" value="{{ val }}" 
+                                            {% if settings.pic == val %}checked{% endif %}
+                                            onchange="this.form.submit()">
+                                        {{ label }}
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="settings-group">
+                            <div class="settings-row">
+                                <label>
+                                    <input type="checkbox" name="html" value="1" 
+                                        {% if settings.html %}checked{% endif %}
+                                        onchange="this.form.submit()">
+                                    Минифицировать HTML
+                                </label>
+                                <label>
+                                    <input type="checkbox" name="css" value="1" 
+                                        {% if settings.css %}checked{% endif %}
+                                        onchange="this.form.submit()">
+                                    Минифицировать CSS
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </header>
 
     <main class="main-content">
         <div class="container">
-
             {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            {% for category, message in messages %}
-            <div class="flash-message flash-{{ category }}">
-                {{ message }}
-            </div>
-            {% endfor %}
-            {% endif %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-message flash-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
             {% endwith %}
 
             <div class="page-header">
                 <h1>{{ name }}</h1>
                 <p>{{ descriptions }}</p>
-            </div>            
+            </div>
 
             {% block content %}{% endblock %}
 
             <div class="experiment-time">
-            {% if sql_queries %}
-                <h4 class="sql-queries-title">SQL-запросы (всего: {{ sql_queries|length }})</h4>
-                <div class="sql-queries-list">
-                {% for q in sql_queries %}
-                    <div class="sql-query-item">
-                    <div class="sql-statement">
-                        <strong>SQL:</strong>
-                        <pre>{{ q.statement }}</pre>
+                {% if sql_queries %}
+                    <h4 class="sql-queries-title">SQL-запросы (всего: {{ sql_queries|length }})</h4>
+                    <div class="sql-queries-list">
+                        {% for q in sql_queries %}
+                            <div class="sql-query-item">
+                                <div class="sql-statement">
+                                    <strong>SQL:</strong>
+                                    <pre>{{ q.statement }}</pre>
+                                </div>
+                                <div class="sql-params">
+                                    <strong>Параметры:</strong>
+                                    <code>{{ q.parameters|tojson(indent=2) }}</code>
+                                </div>
+                                {% if q.duration is defined %}
+                                    <div class="sql-duration">
+                                        <strong>Время:</strong> {{ "%.2f"|format(q.duration * 1000) }} мс
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
                     </div>
-                    <div class="sql-params">
-                        <strong>Параметры:</strong>
-                        <code>{{ q.parameters|tojson(indent=2) }}</code>
-                    </div>
-                    {% if q.duration is defined %}
-                        <div class="sql-duration">
-                        <strong>Время:</strong> {{ "%.2f"|format(q.duration * 1000) }} мс
-                        </div>
-                    {% endif %}
-                    </div>
-                {% endfor %}
-                </div>
-            {% else %}
-                <p class="no-queries">Нет выполненных SQL-запросов.</p>
-            {% endif %}
+                {% else %}
+                    <p class="no-queries">Нет выполненных SQL-запросов.</p>
+                {% endif %}
             </div>
-
         </div>
     </main>
 
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2025 Experiments</p>
+            <p>&copy; 2025 Experiments Platform</p>
         </div>
     </footer>
 
     {% block scripts %}{% endblock %}
 </body>
-
 </html>

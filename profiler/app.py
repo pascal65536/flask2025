@@ -11,6 +11,7 @@ import time
 import htmlmin
 from forms import SettingsForm
 
+
 SETTINGS = {
     "per_page": "8",
     "pic": "250.jpg",
@@ -99,31 +100,29 @@ def populate_sample_data():
     db.session.commit()
 
 
-@app.route('/settings', methods=['POST'])
+@app.route("/settings", methods=["POST"])
 def settings():
-    # Сохраняем настройки из формы
-    SETTINGS['per_page'] = int(request.form.get('per_page', SETTINGS.get('per_page', 8)))
-    SETTINGS['pic'] = request.form.get('pic', SETTINGS.get('pic', '250.jpg'))
-    # Обрабатываем чекбоксы - если не пришли, то False
-    SETTINGS['html'] = 'html' in request.form
-    SETTINGS['css'] = 'css' in request.form
-
-    flash('Настройки обновлены', 'success')
-    # Возвращаем на предыдущую страницу (реферер) или главную
-    return redirect(request.referrer or url_for('index'))
+    SETTINGS["per_page"] = int(
+        request.form.get("per_page", SETTINGS.get("per_page", 8))
+    )
+    SETTINGS["pic"] = request.form.get("pic", SETTINGS.get("pic", "250.jpg"))
+    SETTINGS["html"] = "html" in request.form
+    SETTINGS["css"] = "css" in request.form
+    flash("Настройки обновлены", "success")
+    return redirect(request.referrer or url_for("index"))
 
 
 @app.route("/")
 def index():
     start_time = time.time()
     recent_images = (
-        GeneratedImage.query.order_by(GeneratedImage.created_at.desc()).limit(6).all()
+        GeneratedImage.query.order_by(GeneratedImage.created_at.desc()).limit(8).all()
     )
 
     for recent in recent_images:
-        if SETTINGS["pic"] == '500.webp': 
+        if SETTINGS["pic"] == "500.webp":
             recent.filename = recent.filename.split(".")[0] + "_500.webp"
-        elif SETTINGS["pic"] == '250.jpg': 
+        elif SETTINGS["pic"] == "250.jpg":
             recent.filename = recent.filename.split(".")[0] + "_250.jpg"
 
     # Рендеринг шаблона
@@ -157,17 +156,15 @@ def pictures(page=1):
         ).paginate(page=page, per_page=per_page, error_out=False)
         images = images_pagination.items
     else:
-        images = GeneratedImage.query.order_by(
-            GeneratedImage.created_at.desc()
-        ).all()
-        images_pagination = []  # пагинация отключена
+        images = GeneratedImage.query.order_by(GeneratedImage.created_at.desc()).all()
+        images_pagination = []
 
     for recent in images:
-        if SETTINGS["pic"] == '500.webp': 
+        if SETTINGS["pic"] == "500.webp":
             recent.filename = recent.filename.split(".")[0] + "_500.webp"
-        elif SETTINGS["pic"] == '250.jpg': 
+        elif SETTINGS["pic"] == "250.jpg":
             recent.filename = recent.filename.split(".")[0] + "_250.jpg"
-    
+
     total = images_pagination.total if images_pagination else len(images)
 
     # Рендеринг шаблона
@@ -183,7 +180,6 @@ def pictures(page=1):
         total=total,
         images=images,
         settings=SETTINGS,
-
     )
 
     # Минификация HTML
@@ -211,9 +207,9 @@ def gena():
     )
 
     for recent in recent_images:
-        if SETTINGS["pic"] == '500.webp': 
+        if SETTINGS["pic"] == "500.webp":
             recent.filename = recent.filename.split(".")[0] + "_500.webp"
-        elif SETTINGS["pic"] == '250.jpg': 
+        elif SETTINGS["pic"] == "250.jpg":
             recent.filename = recent.filename.split(".")[0] + "_250.jpg"
 
     # Рендеринг шаблона
@@ -228,7 +224,6 @@ def gena():
         recent_images=recent_images,
         color_hex=color_hex,
         settings=SETTINGS,
-
     )
 
     # Минификация HTML
@@ -270,7 +265,6 @@ def weather1():
         sql_queries=g.get("sql_queries", list()),
         data=results,
         settings=SETTINGS,
-
     )
 
 
@@ -298,7 +292,6 @@ def weather2():
         sql_queries=g.get("sql_queries", list()),
         data=results,
         settings=SETTINGS,
-
     )
 
 
@@ -325,7 +318,6 @@ def weather3():
         sql_queries=g.get("sql_queries", list()),
         data=results,
         settings=SETTINGS,
-
     )
 
 
