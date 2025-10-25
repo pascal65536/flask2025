@@ -2,8 +2,6 @@ from flask import (
     Flask,
     render_template,
     request,
-    send_file,
-    jsonify,
     flash,
     redirect,
     url_for,
@@ -12,11 +10,10 @@ from flask import (
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
 from sqlalchemy.engine import Engine
-from sqlalchemy import func, text, case, event
+from sqlalchemy import func, event
 import random
 from PIL import Image, ImageDraw, ImageFont
 import os
-import sys
 import colorsys
 import time
 import htmlmin
@@ -25,9 +22,7 @@ import htmlmin
 app = Flask(__name__)
 
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///temperature.db"
-# app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_RECORD_QUERIES"] = True
-# app.config["SQLALCHEMY_ECHO"] = True
 
 app.config["SECRET_KEY"] = os.urandom(12)
 
@@ -106,7 +101,8 @@ def index():
     recent_images = (
         GeneratedImage.query.order_by(GeneratedImage.created_at.desc()).limit(6).all()
     )
-
+    for recent in recent_images:
+        recent.filename = recent.filename.split('.')[0] + '_250.jpg'
     # Рендеринг шаблона
     html_content = render_template(
         "index.html",
@@ -120,7 +116,7 @@ def index():
 
     # Минификация HTML
     return htmlmin.minify(html_content)
-    
+
 
 @app.route("/pictures")
 @app.route("/pictures/<int:page>")
@@ -130,7 +126,10 @@ def pictures(page=1):
     images_pagination = GeneratedImage.query.order_by(
         GeneratedImage.created_at.desc()
     ).paginate(page=page, per_page=per_page, error_out=False)
-    return render_template(
+    for recent in images_pagination:
+        recent.filename = recent.filename.split('.')[0] + '_250.jpg'
+    # Рендеринг шаблона
+    html_content = render_template(
         "pictures.html",
         title="Галерея изображений",
         name="Галерея созданных изображений",
@@ -140,6 +139,9 @@ def pictures(page=1):
         pagination=images_pagination,
         images=images_pagination.items,
     )
+
+    # Минификация HTML
+    return htmlmin.minify(html_content)
 
 
 @app.route("/gena", methods=["GET", "POST"])
@@ -158,8 +160,10 @@ def gena():
     recent_images = (
         GeneratedImage.query.order_by(GeneratedImage.created_at.desc()).limit(4).all()
     )
-
-    return render_template(
+    for recent in recent_images:
+        recent.filename = recent.filename.split('.')[0] + '_250.jpg'
+    # Рендеринг шаблона
+    html_content = render_template(
         "gena.html",
         title="Генератор картинок",
         name="Генератор художественных изображений",
@@ -169,7 +173,9 @@ def gena():
         recent_images=recent_images,
         color_hex=color_hex,
     )
-
+    
+    # Минификация HTML
+    return htmlmin.minify(html_content)
 
 @app.route("/api/clear_images", methods=["POST"])
 def clear_images():
