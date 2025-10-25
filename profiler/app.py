@@ -1,12 +1,4 @@
-from flask import (
-    Flask,
-    render_template,
-    request,
-    flash,
-    redirect,
-    url_for,
-    g,
-)
+from flask import Flask, render_template, g, request, flash, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
 from sqlalchemy.engine import Engine
@@ -17,7 +9,15 @@ import os
 import colorsys
 import time
 import htmlmin
+from forms import SettingsForm
 
+
+SETTINGS = {
+    "per_page": "8",
+    "pic": "250.jpg",
+    "html": True,
+    "css": False,
+}
 
 app = Flask(__name__)
 
@@ -53,22 +53,27 @@ class GeneratedImage(db.Model):
 # Инициализируем список запросов в контексте запроса
 @app.before_request
 def before_request():
-    g.setdefault('sql_queries', list())
+    g.setdefault("sql_queries", list())
 
 
 # Обработчик события выполнения SQL
 @event.listens_for(Engine, "before_cursor_execute")
-def receive_before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+def receive_before_cursor_execute(
+    conn, cursor, statement, parameters, context, executemany
+):
     import sqlparse
-    formatted_sql = sqlparse.format(statement, reindent=True, keyword_case="upper")
-    dotg = g.setdefault('sql_queries', list())
-    dotg.append({
-        'statement': statement,
-        'parameters': parameters,
-        'start_time': time.time(),
-        'formatted_sql': formatted_sql,
 
-    })
+    formatted_sql = sqlparse.format(statement, reindent=True, keyword_case="upper")
+    dotg = g.setdefault("sql_queries", list())
+    dotg.append(
+        {
+            "statement": statement,
+            "parameters": parameters,
+            "start_time": time.time(),
+            "formatted_sql": formatted_sql,
+        }
+    )
+
 
 def populate_sample_data():
     db.session.query(City).delete()
@@ -95,14 +100,60 @@ def populate_sample_data():
     db.session.commit()
 
 
+@app.route("/settings", methods=["GET", "POST"])
+def settings():
+    start_time = time.time()
+    form = SettingsForm()
+
+    # Заполняем данные формы при GET
+    if request.method == "GET":
+        form.pic.entries = []
+        form.pic.append_entry(SETTINGS["pic"])
+        form.html.data = SETTINGS["html"]
+        form.css.data = SETTINGS["css"]
+        form.per_page.data = str(SETTINGS.get("per_page", "8"))  # per_page - SelectField, строка
+
+    # Обработка POST и валидация
+    if form.validate_on_submit():
+        SETTINGS["pic"] = form.pic.entries[0].data if form.pic.entries else ""
+        SETTINGS["html"] = form.html.data
+        SETTINGS["css"] = form.css.data
+        SETTINGS["per_page"] = int(form.per_page.data)  # получаем из SelectField как строку, конвертируем в int
+        msg = "Настройки успешно сохранены"
+        flash(msg, "success")
+        return redirect(url_for("settings"))
+
+    html_content = render_template(
+        "settings.html",
+        form=form,
+        title="Platform",
+        name="Добро пожаловать в Experiments Platform",
+        experiment="experiment",
+        descriptions="Исследуйте возможности веб-разработки, оптимизацию запросов и генерацию изображений",
+        execution_time=time.time() - start_time,
+        sql_queries=g.get("sql_queries", list()),
+    )
+
+    # Минификация HTML
+    if SETTINGS["html"]:
+        return htmlmin.minify(html_content)
+    else:
+        return html_content
+
+
 @app.route("/")
 def index():
     start_time = time.time()
     recent_images = (
         GeneratedImage.query.order_by(GeneratedImage.created_at.desc()).limit(6).all()
     )
+
     for recent in recent_images:
-        recent.filename = recent.filename.split('.')[0] + '_250.jpg'
+        if SETTINGS["pic"] == '500.webp': 
+            recent.filename = recent.filename.split(".")[0] + "_500.webp"
+        elif SETTINGS["pic"] == '250.jpg': 
+            recent.filename = recent.filename.split(".")[0] + "_250.jpg"
+
     # Рендеринг шаблона
     html_content = render_template(
         "index.html",
@@ -110,24 +161,40 @@ def index():
         name="Добро пожаловать в Experiments Platform",
         experiment="experiment",
         descriptions="Исследуйте возможности веб-разработки, оптимизацию запросов и генерацию изображений",
-        execution_time=time.time() - start_time, sql_queries=g.get('sql_queries', list()),
+        execution_time=time.time() - start_time,
+        sql_queries=g.get("sql_queries", list()),
         recent_images=recent_images,
     )
 
     # Минификация HTML
-    return htmlmin.minify(html_content)
+    if SETTINGS["html"]:
+        return htmlmin.minify(html_content)
+    else:
+        return html_content
 
 
 @app.route("/pictures")
 @app.route("/pictures/<int:page>")
 def pictures(page=1):
     start_time = time.time()
-    per_page = 8
-    images_pagination = GeneratedImage.query.order_by(
-        GeneratedImage.created_at.desc()
-    ).paginate(page=page, per_page=per_page, error_out=False)
-    for recent in images_pagination:
-        recent.filename = recent.filename.split('.')[0] + '_250.jpg'
+    per_page = int(SETTINGS["per_page"])
+    if per_page:
+        images_pagination = GeneratedImage.query.order_by(
+            GeneratedImage.created_at.desc()
+        ).paginate(page=page, per_page=per_page, error_out=False)
+        images = images_pagination.items
+    else:
+        images = GeneratedImage.query.order_by(
+            GeneratedImage.created_at.desc()
+        ).all()
+        images_pagination = []  # пагинация отключена
+
+    for recent in images:
+        if SETTINGS["pic"] == '500.webp': 
+            recent.filename = recent.filename.split(".")[0] + "_500.webp"
+        elif SETTINGS["pic"] == '250.jpg': 
+            recent.filename = recent.filename.split(".")[0] + "_250.jpg"
+
     # Рендеринг шаблона
     html_content = render_template(
         "pictures.html",
@@ -135,13 +202,17 @@ def pictures(page=1):
         name="Галерея созданных изображений",
         experiment="experiment",
         descriptions="Все созданные изображения",
-        execution_time=time.time() - start_time, sql_queries=g.get('sql_queries', list()),
+        execution_time=time.time() - start_time,
+        sql_queries=g.get("sql_queries", list()),
         pagination=images_pagination,
-        images=images_pagination.items,
+        images=images,
     )
 
     # Минификация HTML
-    return htmlmin.minify(html_content)
+    if SETTINGS["html"]:
+        return htmlmin.minify(html_content)
+    else:
+        return html_content
 
 
 @app.route("/gena", methods=["GET", "POST"])
@@ -160,8 +231,13 @@ def gena():
     recent_images = (
         GeneratedImage.query.order_by(GeneratedImage.created_at.desc()).limit(4).all()
     )
+
     for recent in recent_images:
-        recent.filename = recent.filename.split('.')[0] + '_250.jpg'
+        if SETTINGS["pic"] == '500.webp': 
+            recent.filename = recent.filename.split(".")[0] + "_500.webp"
+        elif SETTINGS["pic"] == '250.jpg': 
+            recent.filename = recent.filename.split(".")[0] + "_250.jpg"
+
     # Рендеринг шаблона
     html_content = render_template(
         "gena.html",
@@ -169,13 +245,18 @@ def gena():
         name="Генератор художественных изображений",
         experiment="experiment",
         descriptions="Выберите цвет и создайте уникальное изображение",
-        execution_time=time.time() - start_time, sql_queries=g.get('sql_queries', list()),
+        execution_time=time.time() - start_time,
+        sql_queries=g.get("sql_queries", list()),
         recent_images=recent_images,
         color_hex=color_hex,
     )
-    
+
     # Минификация HTML
-    return htmlmin.minify(html_content)
+    if SETTINGS["html"]:
+        return htmlmin.minify(html_content)
+    else:
+        return html_content
+
 
 @app.route("/api/clear_images", methods=["POST"])
 def clear_images():
@@ -205,7 +286,8 @@ def weather1():
         name="Средняя температура по городам",
         experiment="experiment",
         descriptions="Оптимизированная версия - один SQL-запрос с GROUP BY",
-        execution_time=time.time() - start_time, sql_queries=g.get('sql_queries', list()),
+        execution_time=time.time() - start_time,
+        sql_queries=g.get("sql_queries", list()),
         data=results,
     )
 
@@ -230,7 +312,8 @@ def weather2():
         name="Средняя температура по городам",
         experiment="experiment",
         descriptions="Полуоптимизированная версия - отдельные агрегатные запросы для каждого города.",
-        execution_time=time.time() - start_time, sql_queries=g.get('sql_queries', list()),
+        execution_time=time.time() - start_time,
+        sql_queries=g.get("sql_queries", list()),
         data=results,
     )
 
@@ -254,7 +337,8 @@ def weather3():
         name="Средняя температура по городам",
         experiment="experiment",
         descriptions="Неэффективный запрос - получаем ВСЕ записи и считаем в Python",
-        execution_time=time.time() - start_time, sql_queries=g.get('sql_queries', list()),
+        execution_time=time.time() - start_time,
+        sql_queries=g.get("sql_queries", list()),
         data=results,
     )
 

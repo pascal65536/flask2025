@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="card" style="padding: 1rem; max-width: 600px; margin: auto;">
+    <h1>Настройки</h1>
+
+    <form method="post">
+        {{ form.hidden_tag() }}
+
+        <div style="margin-bottom: 1rem;">
+            <label for="{{ form.per_page.id }}" style="font-weight: bold;">Количество объектов на странице</label><br>
+            {{ form.per_page(style="width: 100%; padding: 0.5rem; font-size: 1rem;") }}
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+            <label>Выбор картинки</label><br>
+            {% for field in form.pic %}
+                <div style="margin-bottom: 0.5rem;">
+                    {{ field.label }}<br>
+                    {{ field(style="width: 100%; padding: 0.5rem; font-size: 1rem;") }}
+                </div>
+            {% endfor %}
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+            <label>{{ form.html.label }}</label>
+            {{ form.html() }}
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+            <label>{{ form.css.label }}</label>
+            {{ form.css() }}
+        </div>
+
+        <div>
+            {{ form.submit(class_="btn", style="padding: 0.5rem 2rem; font-size: 1rem;") }}
+        </div>
+    </form>
+</div>
+{% endblock %}
